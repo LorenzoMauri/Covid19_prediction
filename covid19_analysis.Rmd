@@ -1,0 +1,21 @@
+---
+title: "Data Science Lab"
+author: "Lorenzo Mauri"
+date: "17 aprile 2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+file_path = "C:\\Users\\loren\\Desktop\\Data Science Unimib\\Data Science Lab\\dati Istat\\Popolazione_comuni_italiani.csv"
+read.csv(file_path)
+```
+
+
+
