@@ -8,14 +8,14 @@ output:
     df_print: paged
 ---
 
-```{r setup}
+```{r setup,Include=FALSE}
 library(magrittr) #package for concatenating commands %>%
 library(tibble)  #set data as tibble object
 library(dplyr)  # data management (filter,select,summarize,ecc...)
 library(lubridate) #manipulating dates
 library(tidyr)
 library(pander)
-knitr::opts_chunk$set(echo = F)
+
 ```
 
 
