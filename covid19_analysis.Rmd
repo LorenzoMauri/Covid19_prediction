@@ -8,14 +8,45 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+library(magrittr) #package for concatenating commands %>%
+library(tibble)  #set data as tibble object
+library(dplyr)  # data management (filter,select,summarize,ecc...)
+library(lubridate) #manipulating dates
+library(tidyr)
+library(pander)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{r}
-file_path = "C:\\Users\\loren\\Desktop\\Data Science Unimib\\Data Science Lab\\dati Istat\\Popolazione_comuni_italiani.csv"
-read.csv(file_path)
+```{r,warning=F}
+setwd("C:\\Users\\loren\\Desktop\\GITHUB REPO\\Covid19_prediction\\data")
+file_path = "comune_giorno.csv"
+data=read.csv(file_path)
+data_small0=head(data,10)
+
 ```
 
 
+
+```{r}
+#reshaping dataset
+data_small=gather(data_small0,'MASCHI_15','MASCHI_16','MASCHI_17','MASCHI_18','MASCHI_19','MASCHI_20','FEMMINE_15','FEMMINE_16','FEMMINE_17','FEMMINE_18','FEMMINE_19','FEMMINE_20',key='GENERE/ANNO',value='MORTI')
+
+#elimino le righe con 0 morti e le colonne dei totali 
+data_small_new=data_small%>%subset(MORTI>0)
+data_small_new2 = data_small_new[,-c(10:15)]
+
+#ecco la forma del dataset ottenuta finora
+pander(data_small_new2)
+```
+
+```{r}
+data_small_new3=data_small_new2%>%separate(`GENERE/ANNO`,into=c('GENERE','ANNO'),sep='_')
+
+mdy()
+
+
+#ecco la forma del dataset ottenuta finora
+#pander(data_small_new2)
+```
 
