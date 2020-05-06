@@ -1,11 +1,11 @@
 ---
-title: "Data Science Lab"
+title: "Data Science Lab - Assignment 1"
 author: "Lorenzo Mauri"
-date: "17 aprile 2020"
+date: "6 maggio 2020"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -27,31 +27,45 @@ data=read.csv(file_path)
 
 ```
 
+
+```{r}
+head(data,20)
+```
+
+
 ```{r}
 #reshaping dataset
 data=gather(data,'MASCHI_15','MASCHI_16','MASCHI_17','MASCHI_18','MASCHI_19','MASCHI_20','FEMMINE_15','FEMMINE_16','FEMMINE_17','FEMMINE_18','FEMMINE_19','FEMMINE_20',key='GENERE/ANNO',value='MORTI')
 
 #elimino le righe con 0 morti e le colonne dei totali 
 data=data%>%subset(MORTI>0)
-data = data[,-c(10:15)]
+
 
 
 ```
-```{r}
-attach(data)
-```
+
+
 
 ```{r}
+
 data=data%>%separate(`GENERE/ANNO`,into=c('GENERE','ANNO'),sep='_')
-attach(data)
 
-data$DATA=ifelse(GE%>%nchar() <=3,paste('0',GE,ANNO,sep=''),paste(GE,ANNO,sep=''))%>%mdy()
-
-mdy()
-data$DATA=ifelse(GE%>%nchar() <=3,paste('0',GE,ANNO,sep=''),paste(GE,ANNO,sep=''))%>%mdy()
-
+data$DATA=ifelse(data$GE%>%nchar()<=3,paste('0',data$GE,data$ANNO,sep=''),paste(data$GE,data$ANNO,sep=''))%>%mdy()
 data=data[,-9]
 
-data=data%>%select('DATA','NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENERE','MORTI','CL_ETA','DATA_INIZIO_DIFF','COD_PROVCOM','PROV','REG')%>%View()
+data=data%>%select('DATA','NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENERE','MORTI','CL_ETA','DATA_INIZIO_DIFF','COD_PROVCOM','PROV','REG')
+```
+
+
+
+
+
+```{r}
+data = data[,-c(10:15)]
+head(data,20)
+```
+
+```{r}
+data%>%nrow()
 ```
 
