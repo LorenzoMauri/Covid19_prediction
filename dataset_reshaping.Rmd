@@ -23,8 +23,8 @@ library(pander)
 ```{r}
 file_path = "C:\\Users\\loren\\Desktop\\repos_github\\Covid19_prediction\\data\\comune_giorno.csv"
 data1=read.csv(file_path)
-data1=data1%>%head(20)
-data1
+data1%>%head(20)
+
 ```
 
 
