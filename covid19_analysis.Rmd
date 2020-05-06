@@ -18,35 +18,39 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+
 ```{r,warning=F}
-setwd("C:\\Users\\loren\\Desktop\\GITHUB REPO\\Covid19_prediction\\data")
-file_path = "comune_giorno.csv"
+
+file_path = "C:\\Users\\loren\\Desktop\\GITHUB REPO\\Covid19_prediction\\data\\comune_giorno.csv"
 data=read.csv(file_path)
-data_small0=head(data,10)
 
 ```
-
-
 
 ```{r}
 #reshaping dataset
-data_small=gather(data_small0,'MASCHI_15','MASCHI_16','MASCHI_17','MASCHI_18','MASCHI_19','MASCHI_20','FEMMINE_15','FEMMINE_16','FEMMINE_17','FEMMINE_18','FEMMINE_19','FEMMINE_20',key='GENERE/ANNO',value='MORTI')
+data=gather(data,'MASCHI_15','MASCHI_16','MASCHI_17','MASCHI_18','MASCHI_19','MASCHI_20','FEMMINE_15','FEMMINE_16','FEMMINE_17','FEMMINE_18','FEMMINE_19','FEMMINE_20',key='GENERE/ANNO',value='MORTI')
 
 #elimino le righe con 0 morti e le colonne dei totali 
-data_small_new=data_small%>%subset(MORTI>0)
-data_small_new2 = data_small_new[,-c(10:15)]
+data=data%>%subset(MORTI>0)
+data = data[,-c(10:15)]
 
-#ecco la forma del dataset ottenuta finora
-pander(data_small_new2)
+
+```
+```{r}
+attach(data)
 ```
 
 ```{r}
-data_small_new3=data_small_new2%>%separate(`GENERE/ANNO`,into=c('GENERE','ANNO'),sep='_')
+data=data%>%separate(`GENERE/ANNO`,into=c('GENERE','ANNO'),sep='_')
+attach(data)
+
+data$DATA=ifelse(GE%>%nchar() <=3,paste('0',GE,ANNO,sep=''),paste(GE,ANNO,sep=''))%>%mdy()
 
 mdy()
+data$DATA=ifelse(GE%>%nchar() <=3,paste('0',GE,ANNO,sep=''),paste(GE,ANNO,sep=''))%>%mdy()
 
+data=data[,-9]
 
-#ecco la forma del dataset ottenuta finora
-#pander(data_small_new2)
+data=data%>%select('DATA','NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENERE','MORTI','CL_ETA','DATA_INIZIO_DIFF','COD_PROVCOM','PROV','REG')%>%View()
 ```
 
