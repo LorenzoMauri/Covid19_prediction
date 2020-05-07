@@ -23,6 +23,8 @@ library(pander)
 ```{r}
 file_path = "C:\\Users\\loren\\Desktop\\repos_github\\Covid19_prediction\\data\\comune_giorno.csv"
 data1=read.csv(file_path)
+#deleting 9999 missing values
+data1=data1%>%subset(MASCHI_20 != 9999)
 data1%>%head(20)
 
 ```
@@ -50,7 +52,27 @@ data4=data3%>%select('DATA','NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENER
 ```
 
 ```{r}
-data4%>%arrange(DATA)%>%head(20)
+data4=data4%>%arrange(DATA)
 ```
 
+```{r}
+#excluding Apr 2020 
+data5= data4%>%subset(DATA%>%month() != 4)
+data5$DATA%>%summary()%>%min()
+data5$DATA%>%summary()%>%max()
+
+```
+
+
+```{r}
+
+cod=c(0:21)
+tcod = c("0","1-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79","80-84","85-89","90-94","95-99","100+")
+
+for (i in 1:nrow(data5)){
+  index = as.numeric(data5$CL_ETA[i])+1 
+  data5$CL_ETA[i]=tcod[index]
+}
+
+```
 
