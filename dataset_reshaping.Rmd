@@ -15,29 +15,26 @@ library(dplyr)  # data management (filter,select,summarize,ecc...)
 library(lubridate) #manipulating dates
 library(tidyr)
 library(pander)
-
 ```
 
-
-
 ```{r}
-file_path = "C:\\Users\\loren\\Desktop\\repos_github\\Covid19_prediction\\data\\comune_giorno.csv"
+file_path = "comuni_giornaliero.csv"
+wd <- paste(dirname(rstudioapi::getActiveDocumentContext()$path), "data", sep = .Platform$file.sep)
+setwd(wd)
+
 data1=read.csv(file_path)
 #deleting 9999 missing values
-data1=data1%>%subset(MASCHI_20 != 9999)
+data1=data1%>%subset(M_20 != 9999)
 data1%>%head(20)
 
 ```
 
-
 ```{r}
 #reshaping dataset
-data2=gather(data1,'MASCHI_15','MASCHI_16','MASCHI_17','MASCHI_18','MASCHI_19','MASCHI_20','FEMMINE_15','FEMMINE_16','FEMMINE_17','FEMMINE_18','FEMMINE_19','FEMMINE_20',key='GENERE/ANNO',value='MORTI')
+data2=gather(data1,'M_15','M_16','M_17','M_18','M_19','M_20','F_15','F_16','F_17','F_18','F_19','F_20',key='GENERE/ANNO',value='MORTI')
 
 #elimino le righe con 0 morti e le colonne dei totali 
 data2=data2%>%subset(MORTI>0)
-
-
 
 ```
 
@@ -48,7 +45,9 @@ data3=data2%>%separate(`GENERE/ANNO`,into=c('GENERE','ANNO'),sep='_')
 data3$GE=ifelse(data3$GE%>%nchar()==3,paste('0',data3$GE,data3$ANNO,sep=''),paste(data3$GE,data3$ANNO,sep=''))
 data3$DATA=data3$GE%>%mdy()
 
-data4=data3%>%select('DATA','NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENERE','MORTI','CL_ETA','DATA_INIZIO_DIFF','COD_PROVCOM','PROV','REG','GE')
+data4=data3%>%select('DATA','NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENERE','MORTI','CL_ETA','COD_PROVCOM','PROV','REG','GE')
+#DATA_INIZIO_DIFF
+
 ```
 
 ```{r}
@@ -69,19 +68,20 @@ data5$DATA%>%summary()%>%max()
 cod=c(0:21)
 tcod = c("0","1-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79","80-84","85-89","90-94","95-99","100+")
 
-for (i in 1:nrow(data5)){
-  index = as.numeric(data5$CL_ETA[i])+1 
-  data5$CL_ETA[i]=tcod[index]
+tcod_transf <- function(x) {  
+  index = as.numeric(x) + 1 
+  x = tcod[index]
 }
 
-data_lomb = data5%>%filter(NOME_REGIONE=="Lombardia")
+tcod_applied <- sapply(data5$CL_ETA, tcod_transf)
+data5$CL_ETA = tcod_applied
 
+data_lomb = data5%>%filter(NOME_REGIONE=="Lombardia")
 data_lomb%>%head(10)
 ```
 
 ```{r}
-
-data_lomb$GENERE=ifelse(data_lomb$GENERE=="MASCHI","M","F")
-data_lomb%>%head(10)
+#data_lomb$GENERE=ifelse(data_lomb$GENERE=="MASCHI","M","F")
+#data_lomb%>%head(10)
 ```
 
