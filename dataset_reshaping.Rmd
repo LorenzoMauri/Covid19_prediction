@@ -74,5 +74,14 @@ for (i in 1:nrow(data5)){
   data5$CL_ETA[i]=tcod[index]
 }
 
+data_lomb = data5%>%filter(NOME_REGIONE=="Lombardia")
+
+data_lomb%>%head(10)
+```
+
+```{r}
+
+data_lomb$GENERE=ifelse(data_lomb$GENERE=="MASCHI","M","F")
+data_lomb%>%head(10)
 ```
 
