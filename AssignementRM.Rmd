@@ -1,0 +1,157 @@
+---
+title: "Covid19_prediction"
+author: "Laura Cavenati, Lori, Marco Distrutti, Santosh"
+date: "06 maggio 2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+Ultimamente si sente dire spesso che il numero di decessi dovuti al covid in Italia sia molto superiore ai dati forniti giornalmente dalla protezione civile.
+Proviamo quindi a dare una stima ragionevole dei morti COVID a partire dal numero dei decessi avvenuti in Italia fino al 31 Marzo 2020 secondo l'Istat.
+Purtroppo i dati Istat non costituiscono un campione rappresentativo dell’universo dei comuni italiani, ma solo un loro sottoinsieme meritevole di attenzione. L’Istat ha scelto infatti di concentrare l’attenzione sui comuni presenti in ANPR (Anagrafe Nazionale Popolazione Residente), con dati affidabili, che presentano almeno dieci decessi nel periodo 4 gennaio - 4 aprile 2020 e che hanno registrato un aumento dei morti pari o superiore al 20 per cento nel periodo 1 marzo-4 aprile 2020 rispetto al dato medio dello stesso periodo degli anni 2015-2019.
+Per un'analisi più dettagliata delle caratteristiche dei comuni considerati, si rimanda al sito:
+https://www.istat.it/it/archivio/240401
+
+Si noti inoltre che più che calcolare i morti COVID, troviamo una stima dei decessi relazionati al covid. A causa delle restrizioni del governo e della quarantena, il numero di morti per incidenti stradali e sul lavoro è diminuito, il sistema sanitario essendo stato sotto forte stress ha causato difficoltà ad accedere al servizio a pazienti non COVID, sono aumentate le morti domestiche.
+```{r message=FALSE, results='hide', error=FALSE}
+library(dplyr)   
+library(tidyr)   
+library(ggplot2) 
+library(plotly) 
+
+setwd("C:\\Users\\Laura\\Desktop\\Covid19_prediction\\data")
+pop<-read.csv("Popolazione_comuni_italiani.csv")
+td<-read.csv("comune_giorno.csv")
+ANPR<-read.csv("Tabella_45 Comuni subentrati.csv",sep=";")
+```
+Preprocessing dei dati
+```{r messagee=FALSE, results='hide', error=FALSE}
+pop %>% rename( COD_PROVCOM = ï..ITTER107, ABITANTI = Value )%>%
+        filter(Sesso=="totale")%>%
+        select(-c(Territorio:Seleziona.periodo ,Flag.Codes,Flags))->pop
+
+pop$COD_PROVCOM<-as.character(pop$COD_PROVCOM)
+pop$COD_PROVCOM<-as.numeric(pop$COD_PROVCOM)
+
+pop <- na.omit(pop)
+#ci sono alcune righe che non rappresentano comuni ma regioni e aree geografiche, quindi le tolgo. 
+
+#Sistemo il data frame in modo che sia più funzionale, come abbiamo fatto a lezione
+td %>% gather(key="SESSO_ANNO", value="DECESSI", MASCHI_15:TOTALE_20)%>% 
+      separate(SESSO_ANNO, c("SESSO", "ANNO"), "_")%>%
+      mutate(DATA = as.Date(paste0("0", GE, "2020"), format = "%m%d%Y")) -> td
+
+#Faccio una join con pop così aggiungo la colonna con il numero di abitanti per comune
+td<-left_join(td, pop, by="COD_PROVCOM")
+
+#Escono dei NAN che sono dovuti al fatto che i due diversi dataframe sono aggiornati a date diverse; 
+#pop è aggornato al 01/01/2019, td al 04/04/2020. In questo lasso di 
+#tempo alcuni comuni si sono fusi tra di loro, ne sono nati altri.
+td <- na.omit(td)
+
+td %>% select(-c(NOME_PROVINCIA,REG, PROV, CL_ETA,GE))%>%
+      filter(SESSO=="TOTALE", DECESSI<9999, format(as.Date(DATA), "%m")!="04" )%>%
+      group_by(ANNO, NOME_REGIONE, NOME_COMUNE, COD_PROVCOM, DATA_INIZIO_DIFF, ABITANTI, DATA)%>%
+      summarise(DECESSI=sum(DECESSI))->tdp
+```
+INSERISCI GRAFICO LEZIONE 5
+
+
+Come prima cosa andiamo a vedere la percentuale di popolazione, relativa alle diverse regioni, 
+di cui l'Istat ci ha fornito i dati e la percentuale di popolazione che rientra nei comuni considerati dall'ANPR.
+Il file che abbiamo utilizzato è disponibile a questo link: https://www.anpr.interno.it/portale/tabelle-di-riferimento
+```{r}
+ANPR$DATASUBENTRO<-as.character(ANPR$DATASUBENTRO)
+ANPR$DATASUBENTRO<-as.Date.character(ANPR$DATASUBENTRO,"%d/%m/%Y")
+ANPR$diffDate<-as.numeric(as.Date("2020-04-17")-ANPR$DATASUBENTRO)
+
+#considero solo i comuni che fanno parte dei comuniin ANPR in data 16/04/2020
+ANPR %>% select(CODISTAT, DATASUBENTRO, diffDate)%>%
+        filter(diffDate>0)%>%
+        select(-c(diffDate,DATASUBENTRO))%>%
+        rename(COD_PROVCOM=CODISTAT)->ANPR
+
+#dataframe con abitanti per comune, COD_PROVCOM e relativa regione di appartenenza
+td %>% distinct(NOME_REGIONE,COD_PROVCOM, ABITANTI)%>%
+      group_by(COD_PROVCOM, ABITANTI)->AbitantiPerComune
+
+left_join(ANPR, AbitantiPerComune, by="COD_PROVCOM")->ANPR
+
+#Non ho la regione di tutti i comuni perchè i dataframe non sono aggiornati alla stesa data. 
+ANPR <- na.omit(ANPR)
+
+
+ANPR %>% group_by(NOME_REGIONE)%>%
+        summarise(abitantiANPR=sum(ABITANTI))->ANPR
+
+#abitanti per regione che rientrano nei comuni in ANPR
+td %>% distinct(NOME_REGIONE, COD_PROVCOM, ABITANTI)%>%
+      group_by(NOME_REGIONE)%>%
+      summarise(abitanti=sum(ABITANTI))->AbitantiPerRegione
+
+inner_join(AbitantiPerRegione, ANPR, by="NOME_REGIONE")->ANPR
+
+#abitanti per regione che rientrano nei comuni considerati dall'Istat
+td %>% filter(DATA_INIZIO_DIFF!="Dati 2020 n.d." )%>%
+      distinct(NOME_COMUNE, NOME_REGIONE, ABITANTI)%>%
+      group_by(NOME_REGIONE)%>%
+      summarise(abitantiCampionati=sum(ABITANTI))->AbitantiPerRegioneCampionati
+
+inner_join( ANPR, AbitantiPerRegioneCampionati, by="NOME_REGIONE")->TOT
+
+#dataframe riassuntivo che compara le varie percentuali
+TOT %>% mutate(percANPR=abitantiANPR/abitanti*100,percCAMPIONATI=abitantiCampionati/abitanti*100)->TOT
+TOT
+```
+I comuni monitorati dall’Istat sono un sottoinsieme di quelli che hanno aderito all’ANPR, la cui copertura, in termini di popolazione, è mostrata nella tabella.
+percANPR indica la percentuale della popoplazione, per regione, che rientra nei comuni in ANPR, percCAMPIONATI indica la percentuale della popoplazione, per regione, che rientra nei comuni campionati dall'Istat.
+Come si vede, la copertura dei dati dell’Istat è tale da non permettere stime significative in molte regioni italiane (soprattutto quelle del sud, come Campania e Basilicata dove ci sono stati meno decessi dovuti al virus).
+
+Scegliamo quindi di considerare la Lombardia, il cui campionamento messo a disposizione dall'Istat costituisce una buona copertura del totale.  
+
+
+Per fare una stima dei morti covid, dato che non abbiamo tutti i comuni ma solo un campione non casuale, possiamo calcolare i morti covid con 'precisione' per i comuni di cui abbiamo i dati dall'Istat. Per i comuni non considerati dall'Istat ma che rientrano nei comuni in ANPR, possiamo fare delle stime, considerando come limite inferiore che non ci siano stati morti covid, e come limite superiore che la mortalità per covid sia 
+stata pari a quella dei comuni campionati. Ipotizziamo che il fatto di rientrare o meno tra i comuni in ANPR sia scorrelata dal numero dei decessi in eccesso; considiamo quindi che i comuni ANPR abbiano avuto una mortalità per covid pari a quella media dei comuni analizzati dall'Istat.
+
+```{r message=FALSE, results='hide', error=FALSE}
+tdp %>% filter(NOME_REGIONE=="Lombardia")->tdpl
+TOT %>%  filter(NOME_REGIONE=="Lombardia")->Lombardia
+
+#morti covid nei comuni campionati dall'Istat
+tdpl %>% filter(DATA_INIZIO_DIFF!="Dati 2020 n.d.")%>%
+        group_by(ANNO)%>%
+        summarise(DECESSIperanno=sum(DECESSI))->tdplc
+
+#morti covid nei comuni non campionati dall'Istat
+tdp%>%  filter(DATA_INIZIO_DIFF!="Dati 2020 n.d.",format(as.Date(DATA), "%m")!="03",as.Date(DATA)!=as.Date("2020-02-29"))%>%
+        group_by(DATA, ANNO) %>%
+        summarise(DECESSI = sum(DECESSI))%>% 
+        arrange(ANNO, DATA) %>%                         
+        ungroup()->tdpg 
+
+tdpg %>% ggplot(aes(x = DATA, y = DECESSI, color = ANNO)) + geom_line()
+```  
+
+
+Per trovare i morti dovuti al covid non considero come base la media stagionale dei morti negli anni 15-19 perchè, come si vede dal grafico, nel periodo gennaio-febbraio 2020, ci sono state meno morti rispetto agli anni precedenti.
+Secondo alcune analisi ciò è dovuto al fatto che quest'inverno è stato più mite dal punto di vista influenzale. Anche il 2016 ha avuto un comportamento simile. Quindi invece che sottrarre la media dei morti 15-19, consideriamo come base i morti del 2016.
+EVENTUALE TEST A SUPPORTO DI QUESTA TESI (ANOVA)
+```{r message=FALSE, results='hide', error=FALSE}
+tdplc$DECESSIperanno[6]-tdplc$DECESSIperanno[2]->mortiLombardiaCampionata
+
+#morti per covid nei comuni non campionati dall'Istat
+mortiLombardiaNonCampionatasup<-mortiLombardiaCampionata/Lombardia$abitantiCampionati*(Lombardia$abitantiANPR-Lombardia$abitantiCampionati)
+
+#morti per covid nei comuni non ANPR
+(Lombardia$abitanti-Lombardia$abitantiANPR)*((mortiLombardiaCampionata)/Lombardia$abitantiANPR)->mortiLombardiaNonANPRinf
+(Lombardia$abitanti-Lombardia$abitantiANPR)*((mortiLombardiaCampionata+mortiLombardiaNonCampionatasup)/Lombardia$abitantiANPR)->mortiLombardiaNonANPRsup
+
+mortiCOVIDinf<-mortiLombardiaCampionata+mortiLombardiaNonANPRinf
+mortiCOVIDsup<-mortiLombardiaCampionata+mortiLombardiaNonCampionatasup+mortiLombardiaNonANPRsup
+```
+Intervallo di confidenza per i morti covid in Lombardia fino a fine marzo
+```{r}
+print(c(mortiCOVIDinf, mortiCOVIDsup))
+```
+CONFRONTO CON DATI AGGIORNATI e CONCLUSIONE
