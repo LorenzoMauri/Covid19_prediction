@@ -13,7 +13,9 @@ Purtroppo i dati Istat non costituiscono un campione rappresentativo dell’univ
 Per un'analisi più dettagliata delle caratteristiche dei comuni considerati, si rimanda al sito:
 https://www.istat.it/it/archivio/240401
 
-Si noti inoltre che più che calcolare i morti COVID, troviamo una stima dei decessi relazionati al covid. A causa delle restrizioni del governo e della quarantena, il numero di morti per incidenti stradali e sul lavoro è diminuito, il sistema sanitario essendo stato sotto forte stress ha causato difficoltà ad accedere al servizio a pazienti non COVID, sono aumentate le morti domestiche.
+Ci concentriamo sul periodo gennaio-marzo perchè i dati relativi ad aprile non sono ancora affidaibi e completi.
+
+Si noti inoltre che più che calcolare i morti COVID, faremo una stima dei decessi relazionati al covid. A causa delle restrizioni del governo e della quarantena, il numero di morti per incidenti stradali e sul lavoro è diminuito, il sistema sanitario essendo stato sotto forte stress ha causato difficoltà ad accedere al servizio a pazienti non COVID e sono aumentate le morti domestiche.
 ```{r message=FALSE, results='hide', error=FALSE}
 library(dplyr)   
 library(tidyr)   
@@ -24,15 +26,16 @@ setwd("C:\\Users\\Laura\\Desktop\\Covid19_prediction\\data")
 pop<-read.csv("Popolazione_comuni_italiani.csv")
 td<-read.csv("comune_giorno.csv")
 ANPR<-read.csv("Tabella_45 Comuni subentrati.csv",sep=";")
+tda<-read.csv("comuni_giornaliero.csv")
 ```
-Preprocessing dei dati
-```{r messagee=FALSE, results='hide', error=FALSE}
+organizziamo, puliamo e sistemiamo i diversi dataset in modo che i dati siano ben organizzati per rispondere alla nostra domanda.
+```{r, messagee=FALSE, results='hide', error=FALSE, warning=FALSE, warning=FALSE}
 #sistemo il dataset in modo che i dati siano ben organizzati
 pop %>% rename( COD_PROVCOM = ï..ITTER107, ABITANTI = Value )%>%
         filter(Sesso=="totale")%>%
         select(-c(Territorio:Seleziona.periodo ,Flag.Codes,Flags))%>%
-        mutate(COD_PROVCOM<-as.character(pop$COD_PROVCOM))%>%
-        mutate(COD_PROVCOM<-as.numeric(pop$COD_PROVCOM))->pop
+        mutate(COD_PROVCOM=as.character(COD_PROVCOM))%>%
+        mutate(COD_PROVCOM=as.numeric(COD_PROVCOM))->pop
 
 pop <- na.omit(pop)
 #ci sono alcune righe che non rappresentano comuni ma regioni e aree geografiche, quindi le tolgo. 
@@ -60,12 +63,12 @@ INSERISCI GRAFICO LEZIONE 5
 
 Per avere un'idea della bontà della copertura dei dati Istat, andiamo a vedere la percentuale di popolazione, relativa alle diverse regioni, di cui l'Istat ci ha fornito i dati e la percentuale di popolazione che rientra nei comuni considerati dall'ANPR.
 Il file che riporta i comuni subentrati in ANPR che abbiamo utilizzato è disponibile a questo link: https://www.anpr.interno.it/portale/tabelle-di-riferimento
-```{r}
+```{r,warning=FALSE}
 ANPR %>% mutate(DATASUBENTRO=as.character(ANPR$DATASUBENTRO))%>%
         mutate(DATASUBENTRO=as.Date.character(ANPR$DATASUBENTRO,"%d/%m/%Y"))%>%
         mutate(diffDate=as.numeric(as.Date("2020-04-17")-ANPR$DATASUBENTRO))->ANPR
 
-#considero solo i comuni che fanno parte dei comuniin in ANPR in data 16/04/2020
+#considero solo i comuni che fanno parte dei comuni in ANPR in data 16/04/2020
 ANPR %>% select(CODISTAT, DATASUBENTRO, diffDate)%>%
         filter(diffDate>0)%>%
         select(-c(diffDate,DATASUBENTRO))%>%
@@ -77,7 +80,7 @@ td %>% distinct(NOME_REGIONE,COD_PROVCOM, ABITANTI)%>%
 
 left_join(ANPR, AbitantiPerComune, by="COD_PROVCOM")->ANPR
 
-#Non ho la regione di tutti i comuni perchè i dataframe non sono aggiornati alla stesa data. Considero quindi questi comuni come se non rientrassero in ANPR
+#Non ho la regione di tutti i comuni perchè i dataframe non sono aggiornati alla stessa data. Considero quindi questi comuni come se non rientrassero in ANPR
 ANPR <- na.omit(ANPR)
 
 #popolazione per regione coperta dall'ANPR
@@ -107,7 +110,9 @@ I comuni monitorati dall’Istat sono un sottoinsieme di quelli che hanno aderit
 percANPR indica la percentuale della popoplazione, per regione, che rientra nei comuni in ANPR, percCAMPIONATI indica la percentuale della popoplazione, per regione, che rientra nei comuni campionati dall'Istat.
 Come si vede, la copertura dei dati dell’Istat è tale da non permettere stime significative in molte regioni italiane (soprattutto quelle del sud, come Campania e Basilicata dove ci sono stati meno decessi dovuti al virus).
 
-Scegliamo quindi di considerare solo la Lombardia, il cui campionamento messo a disposizione dall'Istat costituisce una buona copertura del totale.  
+Scegliamo quindi di considerare solo la Lombardia, il cui campionamento messo a disposizione dall'Istat costituisce una buona copertura del totale.
+La domanda finale a cui vogliamo risolvere è quindi: "QUANTI SONO STATI I DECESSI RELAZIONATI A COVID IN LOMARDIA NEL PERIODO DAL 1 GENNAIO AL 31 MARZO 2020?"
+  
 ```{r message=FALSE, results='hide', error=FALSE}
 tdp %>% filter(NOME_REGIONE=="Lombardia")->tdpl
 TOT %>%  filter(NOME_REGIONE=="Lombardia")->Lombardia
@@ -150,4 +155,68 @@ Intervallo di confidenza per i morti covid in Lombardia fino a fine marzo:
 ```{r}
 print(c(mortiCOVIDinf, mortiCOVIDsup))
 ```
-CONFRONTO CON DATI AGGIORNATI e CONCLUSIONE
+Quesa forchetta di valori indica i decessi relazionati a covid in Lombardia nel periodo 1 gennaio-31 marzo 2020.
+
+
+In realtà in data 4 maggio 2020 Istat ha fornito dei dati aggiornati per 6.866 comuni nel periodo 1 gennaio-31 marzo. Se ripetiamo le stesse analisi fatte precedentemente, possiamo arrivare a una stima dei decessi più precisa. (Per chiarezza non riportiamo tutto il codice ma solo l'output finale).
+
+```{r, message=FALSE, results='hide', error=FALSE, echo=FALSE, warning=FALSE}
+
+tda %>% gather(key="SESSO_ANNO", value="DECESSI", M_15:T_20)%>%
+      separate(SESSO_ANNO, c("SESSO", "ANNO"), "_")%>%
+      mutate(DATA=as.Date(paste0("0", GE, "2020"), format="%m%d%Y"))%>%
+      mutate(DECESSI=as.numeric(DECESSI))->tda
+
+tda<-left_join(tda, pop, by="COD_PROVCOM")
+
+tda <- na.omit(tda)
+
+tda %>% select(-c(NOME_PROVINCIA,REG, PROV, CL_ETA,GE))%>%
+      filter(SESSO=="T", DECESSI<9999, format(as.Date(DATA), "%m")!="04" )%>%
+      group_by(ANNO, NOME_REGIONE, NOME_COMUNE, COD_PROVCOM, TIPO_COMUNE, ABITANTI)%>%
+      summarise(DECESSI=sum(DECESSI))->tdap
+
+#abitanti per regione
+tda%>% distinct(NOME_REGIONE, COD_PROVCOM, ABITANTI)%>%
+  group_by(NOME_REGIONE)%>%
+  summarise(abitanti=sum(ABITANTI))->AbitantiPerRegione
+
+#abitanti per regione dei comuni considerati dall'Istat
+tda%>% filter(TIPO_COMUNE!="3" )%>%
+  distinct(NOME_COMUNE, NOME_REGIONE, ABITANTI)%>%
+  group_by(NOME_REGIONE)%>%
+  summarise(abitantiCampionati=sum(ABITANTI))->AbitantiPerRegioneCampionati
+
+inner_join( AbitantiPerRegione, AbitantiPerRegioneCampionati, by="NOME_REGIONE")->TOT
+
+#dataframe riassuntivo che compara le varie percentuali
+TOT %>% mutate(percCAMPIONATI=abitantiCampionati/abitanti*100)->TOT
+
+#ANALIZZO I MORTI della Lombardia
+tdap %>% filter(NOME_REGIONE=="Lombardia")->tdapl
+TOT %>%  filter(NOME_REGIONE=="Lombardia")->Lombardia
+
+#morti per covid nei comuni campionati dall'Istat
+tdapl %>% filter(TIPO_COMUNE!="3")%>%
+  group_by(ANNO)%>%
+  summarise(DECESSIperanno=sum(DECESSI))->tdaplc
+
+#morti per covid nei comuni non campionati dall'Istat
+tdaplc$DECESSIperanno[6]-tdaplc$DECESSIperanno[2]->mortiLombardiaCampionata
+
+#percentuale di morti covid sulla popolazione campionata dall'Istat
+mortalitàLombardiaCampionata<-as.vector(mortiLombardiaCampionata/Lombardia$abitantiCampionati)
+
+
+#morti per covid nei comuni non campionati 
+mortiLombardiaCampionata/Lombardia$abitantiCampionati*(Lombardia$abitanti-Lombardia$abitantiCampionati)->mortiLombardiaNonCampionatasup
+
+mortiCOVIDinf<-mortiLombardiaCampionata
+mortiCOVIDsup<-mortiLombardiaCampionata+mortiLombardiaNonCampionatasup
+```
+Forchetta per i morti covid con dati aggiornati in Lombardia fino a fine marzo
+```{r}
+print(c(mortiCOVIDinf, mortiCOVIDsup))
+```
+Questa stima, come ci aspettavamo, è più precisa.
+Il risultato che avevamo trovato con i dati non aggiornati contiene questa forchetta di valori. Ciò conferma che la nostra stima iniziale anche se imprecisa, è sensata.
