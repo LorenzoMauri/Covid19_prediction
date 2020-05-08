@@ -33,13 +33,18 @@ setwd(wd)
 file_path = c("deaths.lombardy.csv","deaths.global.csv","Tabella_45 Comuni subentrati.csv","Popolazione_comuni_italiani.csv")
 dt_lomb=read.csv(file_path[1])
 dt_global =read.csv(file_path[2])
-dt_copertura = read.csv(file_path[3])
+dt_ANPR = read.csv(file_path[3],sep=';')
 dt_population=read.csv(file_path[4],sep = ';')
 #sorting dates (variable GE)
 dt_lomb=dt_lomb%>%arrange(GE)
 dt_global=dt_global%>%arrange(GE)
 
 
+```
+
+
+```{r}
+dt_population=dt_population%>%select(c("ï..ITTER107",'Territorio','Sesso','Value'))
 ```
 
 $ITTER107$ field
@@ -57,11 +62,16 @@ Therefore, a good option would be to remove that prefix and then join the 2 tabl
 
 ```{r}
 
-#in order to make the left join the variables (keys) must be of the same type. Let's transform them into characters and then execute theleft join with right key = and left key = 
+#in order to make the left join the variables (keys) must be of the same type. Let's transform them into characters and then execute theleft join with right key = cod_nuts and left key = COD_PROVCOM
+
 names(dt_population)[1]='cod_nuts'
 dt_population$cod_nuts=dt_population$cod_nuts%>%as.character()
 dt_lomb$COD_PROVCOM=dt_lomb$COD_PROVCOM%>%as.character()
-dt_population=left_join(dt_lomb,dt_population,by=c('COD_PROVCOM'='cod_nuts'))
+
+#reshaping dt_population in the form #cod_nuts,territorio,femmine,maschi,totale
+
+dt_population=dt_population%>%spread(Sesso,Value)
+dt_population_joined=left_join(dt_lomb,dt_population,by=c('COD_PROVCOM'='cod_nuts'))
 ```
 
 
@@ -77,4 +87,22 @@ dt_population=left_join(dt_lomb,dt_population,by=c('COD_PROVCOM'='cod_nuts'))
 
 Per avere un'idea della bontà della copertura dei dati Istat, andiamo a vedere la percentuale di popolazione, relativa alle diverse regioni, di cui l'Istat ci ha fornito i dati e la percentuale di popolazione che rientra nei comuni considerati dall'ANPR.
 Il file che riporta i comuni subentrati in ANPR che abbiamo utilizzato è disponibile a questo link: https://www.anpr.interno.it/portale/tabelle-di-riferimento
+
+
+```{r}
+#ignoring 2020 data
+dt_ANPR$DATASUBENTRO=dt_ANPR$DATASUBENTRO%>%dmy()
+dt_ANPR=dt_ANPR%>%filter(year(DATASUBENTRO)<=2019)
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+
+```
 
