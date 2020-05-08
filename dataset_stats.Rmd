@@ -1,0 +1,32 @@
+---
+title: "Data Science Lab - Assignment 1"
+author: "Marco Distrutti"
+date: "6 maggio 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup,Include=FALSE}
+library(magrittr)  # package for concatenating commands %>%
+library(tibble)    # set data as tibble object
+library(dplyr)     # data management (filter,select,summarize,ecc...)
+library(lubridate) # manipulating dates
+library(tidyr)
+library(pander)
+```
+
+```{r}
+#
+# Fetch ISTAT csv files:
+# Merge daily death toll from the most updated data (comuni_giornaliero.csv) with extra data such as data_inizio_diff (comune_giorno.csv)
+#
+
+wd <- paste(dirname(rstudioapi::getActiveDocumentContext()$path), "data", sep = .Platform$file.sep)
+setwd(wd)
+file_path = "cleaned.csv"
+dt = read.csv(file_path)
+
+dt %>% head(20)
+```
