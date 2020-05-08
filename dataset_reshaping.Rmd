@@ -9,63 +9,79 @@ output:
 ---
 
 ```{r setup,Include=FALSE}
-library(magrittr) #package for concatenating commands %>%
-library(tibble)  #set data as tibble object
-library(dplyr)  # data management (filter,select,summarize,ecc...)
-library(lubridate) #manipulating dates
+library(magrittr)  # package for concatenating commands %>%
+library(tibble)    # set data as tibble object
+library(dplyr)     # data management (filter,select,summarize,ecc...)
+library(lubridate) # manipulating dates
 library(tidyr)
 library(pander)
+library(readr)
 ```
 
 ```{r}
-file_path = "comuni_giornaliero.csv"
+
+#Piccola osservazione:
+#read_csv è molto più veloce di read.csv per file di grosse dimensioni
+#http://yetanothermathprogrammingconsultant.blogspot.com/2016/12/reading-csv-files-in-r-readcsv-vs.html
+
+#**********************#
+# Fetch ISTAT csv data #
+#**********************#
+
 wd <- paste(dirname(rstudioapi::getActiveDocumentContext()$path), "data", sep = .Platform$file.sep)
 setwd(wd)
+file_path = "comuni_giornaliero.csv"
+#data1 = read.csv(file_path)
 
-data1=read.csv(file_path)
+#questa regola vale anche per python: se vengono specificati i tipi in lettura su un file di importazione l'interprete non fa 
+#alcuna inferenza sui campi per capire di che tipo sono, e questo è un bene. Inoltre se specificate l'encoding non avete bisogno
+#di fare alcuna conversione dei caratteri.
+dt_deaths = read_csv(file_path, 
+                     col_types = cols( .default = "c"), 
+                     locale = readr::locale(encoding = "latin1"))
+dt_csv = dt_deaths
+
+#file_path = "comune_giorno.csv"
+#comune_giorno = read.csv(file_path)
+#one row for each municipality
+#comune_data_infezione = unique((comune_data_infezione %>% select(c("COD_PROVCOM", "DATA_INIZIO_DIFF"))))
+
+#merge
+#data1<-left_join(data1, comune_data_infezione, by="COD_PROVCOM")
+
 #deleting 9999 missing values
-data1=data1%>%subset(M_20 != 9999)
-data1%>%head(20)
-
+dt_deaths = dt_deaths %>% subset(M_20 != 9999)
+dt_deaths %>% head(20)
 ```
-
 ```{r}
 #reshaping dataset
-data2=gather(data1,'M_15','M_16','M_17','M_18','M_19','M_20','F_15','F_16','F_17','F_18','F_19','F_20',key='GENERE/ANNO',value='MORTI')
+dt_deaths = gather(data1,'M_15','M_16','M_17','M_18','M_19','M_20','F_15','F_16','F_17','F_18','F_19','F_20',key='GENERE/ANNO',value='MORTI')
 
 #elimino le righe con 0 morti e le colonne dei totali 
-data2=data2%>%subset(MORTI>0)
-
+dt_deaths = dt_deaths %>% subset(MORTI>0)
 ```
 
 ```{r}
+dt_deaths = dt_deaths %>% separate('GENERE/ANNO',into=c('GENERE','ANNO'), sep='_')
 
-data3=data2%>%separate(`GENERE/ANNO`,into=c('GENERE','ANNO'),sep='_')
+#questa trasformazione non è ottimale perché richiede due scansioni una dell'ifelse e l'altra quando applichi ymd
+#tra l'altro nel nuovo formato hanno aggiunto lo 0 in testa nei primi 9 mesi.
 
-data3$GE=ifelse(data3$GE%>%nchar()==3,paste('0',data3$GE,data3$ANNO,sep=''),paste(data3$GE,data3$ANNO,sep=''))
-data3$DATA=data3$GE%>%mdy()
-
-data4=data3%>%select('DATA','NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENERE','MORTI','CL_ETA','COD_PROVCOM','PROV','REG','GE')
+#data3$GE   = ifelse(data3$GE%>%nchar()==3,paste('0',data3$GE,data3$ANNO,sep=''),paste(data3$GE,data3$ANNO,sep=''))
+#data3$DATA = data3$GE%>%ymd()
+dt_deaths = dt_deaths %>% select('ANNO', 'GE', 'NOME_REGIONE','NOME_PROVINCIA','NOME_COMUNE','GENERE','MORTI','CL_ETA','COD_PROVCOM','PROV','REG')
 #DATA_INIZIO_DIFF
-
-```
-
-```{r}
-data4=data4%>%arrange(DATA)
 ```
 
 ```{r}
 #excluding Apr 2020 
-data5= data4%>%subset(DATA%>%month() != 4)
-data5$DATA%>%summary()%>%min()
-data5$DATA%>%summary()%>%max()
-
+#data5 = data4 %>% subset(DATA %>% month() != 4)
+#data5$DATA %>% summary() %>% min()
+#ata5$DATA %>% summary() %>% max()
 ```
-
 
 ```{r}
 
-cod=c(0:21)
 tcod = c("0","1-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79","80-84","85-89","90-94","95-99","100+")
 
 tcod_transf <- function(x) {  
@@ -73,15 +89,14 @@ tcod_transf <- function(x) {
   x = tcod[index]
 }
 
-tcod_applied <- sapply(data5$CL_ETA, tcod_transf)
-data5$CL_ETA = tcod_applied
+tcod_applied <- sapply(dt_deaths$CL_ETA, tcod_transf)
+dt_deaths$CL_ETA = tcod_applied
 
-data_lomb = data5%>%filter(NOME_REGIONE=="Lombardia")
-data_lomb%>%head(10)
+data_lomb = dt_deaths %>% filter(NOME_REGIONE=="Lombardia")
+data_lomb %>% head(10)
 ```
 
 ```{r}
-#data_lomb$GENERE=ifelse(data_lomb$GENERE=="MASCHI","M","F")
-#data_lomb%>%head(10)
+dt_deaths %>% write.csv("data/deaths.lombardy.csv")
+data_lomb %>% write.csv("data/deaths.global.csv")
 ```
-
