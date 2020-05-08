@@ -75,34 +75,13 @@ dt_population_joined=left_join(dt_lomb,dt_population,by=c('COD_PROVCOM'='cod_nut
 ```
 
 
-
 ```{r}
-###########################
-#INSERISCI GRAFICO LEZIONE 5
-###########################
-```
-
-
-## Livello di Copertura 
-
-Per avere un'idea della bontà della copertura dei dati Istat, andiamo a vedere la percentuale di popolazione, relativa alle diverse regioni, di cui l'Istat ci ha fornito i dati e la percentuale di popolazione che rientra nei comuni considerati dall'ANPR.
-Il file che riporta i comuni subentrati in ANPR che abbiamo utilizzato è disponibile a questo link: https://www.anpr.interno.it/portale/tabelle-di-riferimento
-
-
-```{r}
-#ignoring 2020 data
-dt_ANPR$DATASUBENTRO=dt_ANPR$DATASUBENTRO%>%dmy()
-dt_ANPR=dt_ANPR%>%filter(year(DATASUBENTRO)<=2019)
-```
-
-```{r}
-
 
 ```
 
 ```{r}
-
-
+setwd(wd)
+write.csv(dt_population_joined,'dt_analysis.csv' )
 
 ```
 
