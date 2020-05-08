@@ -1,7 +1,7 @@
 ---
 title: "Data Science Lab - Assignment 1"
 author: "Marco Distrutti"
-date: "6 maggio 2020"
+date: "8 Maggio 2020"
 output:
   pdf_document: default
   html_document:
@@ -14,7 +14,9 @@ library(tibble)    # set data as tibble object
 library(dplyr)     # data management (filter,select,summarize,ecc...)
 library(lubridate) # manipulating dates
 library(tidyr)
+library(ggplot2)
 library(pander)
+
 ```
 
 ```{r}
@@ -23,10 +25,56 @@ library(pander)
 # Merge daily death toll from the most updated data (comuni_giornaliero.csv) with extra data such as data_inizio_diff (comune_giorno.csv)
 #
 
-wd <- paste(dirname(rstudioapi::getActiveDocumentContext()$path), "data", sep = .Platform$file.sep)
-setwd(wd)
-file_path = "cleaned.csv"
-dt = read.csv(file_path)
+wd="C:\\Users\\loren\\Desktop\\repos_github\\Covid19_prediction\\data"
 
-dt %>% head(20)
+setwd(wd)
+
+#readind .csv files
+file_path = c("deaths.lombardy.csv","deaths.global.csv","Tabella_45 Comuni subentrati.csv","Popolazione_comuni_italiani.csv")
+dt_lomb=read.csv(file_path[1])
+dt_global =read.csv(file_path[2])
+dt_copertura = read.csv(file_path[3])
+dt_population=read.csv(file_path[4],sep = ';')
+#sorting dates (variable GE)
+dt_lomb=dt_lomb%>%arrange(GE)
+dt_global=dt_global%>%arrange(GE)
+
+
 ```
+
+$ITTER107$ field
+
+NUTS stands for "Nomenclature of Territorial Units for Statistics" which is is a geocode standard for referencing the subdivisions of countries for statistical purposes. The following link refers to a complete list of all territorial units codes :
+
+https://www.istat.it/it/archivio/6789
+
+
+Notice that all the values of the ITTER107 field has a prefixed 0
+For instance : 
+ITTER107= <0>12017 corresponds to COD_PROVCOM = 12017  =>  Brebbia (Varese, Lombardy)
+
+Therefore, a good option would be to remove that prefix and then join the 2 tables 
+
+```{r}
+
+#in order to make the left join the variables (keys) must be of the same type. Let's transform them into characters and then execute theleft join with right key = and left key = 
+names(dt_population)[1]='cod_nuts'
+dt_population$cod_nuts=dt_population$cod_nuts%>%as.character()
+dt_lomb$COD_PROVCOM=dt_lomb$COD_PROVCOM%>%as.character()
+dt_population=left_join(dt_lomb,dt_population,by=c('COD_PROVCOM'='cod_nuts'))
+```
+
+
+
+```{r}
+###########################
+#INSERISCI GRAFICO LEZIONE 5
+###########################
+```
+
+
+## Livello di Copertura 
+
+Per avere un'idea della bontà della copertura dei dati Istat, andiamo a vedere la percentuale di popolazione, relativa alle diverse regioni, di cui l'Istat ci ha fornito i dati e la percentuale di popolazione che rientra nei comuni considerati dall'ANPR.
+Il file che riporta i comuni subentrati in ANPR che abbiamo utilizzato è disponibile a questo link: https://www.anpr.interno.it/portale/tabelle-di-riferimento
+
