@@ -1,0 +1,12 @@
+"0","#**********************#"
+"0","# Fetch dati           #"
+"0","#**********************#"
+"0","wd <- paste(dirname(rstudioapi::getActiveDocumentContext()$path), ""data"", sep = .Platform$file.sep)"
+"0","setwd(wd)"
+"2","The working directory was changed to C:/Users/Laura/Desktop/Covid19_prediction/data inside a notebook chunk. The working directory will be reset when the chunk is finished running. Use the knitr root.dir option in the setup chunk to change the working directory for notebook chunks."
+"0","file_path = ""deaths.lombardy.csv"""
+"0","dt_deaths = read_csv(file_path, "
+"0","                     col_types = cols( .default = col_character(), MORTI = col_integer()), "
+"0","                     locale = readr::locale(encoding = ""latin1""))"
+"2","Error: 'deaths.lombardy.csv' does not exist in current working directory ('C:/Users/Laura/Desktop/Covid19_prediction/data').
+"

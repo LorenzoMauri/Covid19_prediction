@@ -1,0 +1,128 @@
+---
+title: "Data Science Lab - Assignment 1"
+author: "Maro Distrutti"
+date: "6 maggio 2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup,Include=FALSE}
+library(magrittr)  # package for concatenating commands %>%
+library(tibble)    # set data as tibble object
+library(dplyr)     # data management (filter,select,summarize,ecc...)
+library(lubridate) # manipulating dates
+library(tidyr)
+library(pander)
+library(readr)
+library(ggplot2) 
+library(plotly) 
+library(fmsb)
+```
+
+```{r}
+
+#**********************#
+# Fetch dati           #
+#**********************#
+
+wd <- paste(dirname(rstudioapi::getActiveDocumentContext()$path), "data", sep = .Platform$file.sep)
+setwd(wd)
+
+file_path = "deaths.lombardy.csv"
+
+dt_deaths = read_csv(file_path, 
+                     col_types = cols( .default = col_character(), MORTI = col_integer()), 
+                     locale = readr::locale(encoding = "latin1"))
+
+dt_deaths %>% head(20)
+
+dt_deaths$GE_INT = as.integer(dt_deaths$GE)
+
+```
+
+```{r}
+#Data transformation
+dt_lombardia <- dt_deaths %>% filter(NOME_REGIONE == 'Lombardia', GE_INT < 400, !is.na(MORTI))
+#create a date field (with fake year), necessary for time series plotting
+dt_lombardia %>% mutate(DATA = as.Date(paste(GE,"2020"), format="%m%d%Y")) -> dt_lombardia
+dt_lombardia %>% head(20)
+```
+
+```{r}
+#siccome i comuni sono tanti e il numero di osservazioni per ciascuno è disomogeneo eleggiamo le provincie come
+#aggregazioni di questo dataset
+
+dt_lombardia %>% 
+  group_by(DATA,ANNO,NOME_PROVINCIA) %>% 
+  summarise(MORTI = sum(MORTI)) %>% 
+  arrange(ANNO,DATA) %>% ungroup() -> dt_lombardia_prov
+```
+
+```{r}
+#plot
+
+dt_lombardia_prov %>% ggplot(aes(x = DATA, y = MORTI, color = ANNO)) + 
+  #geometry
+  geom_line() + 
+  facet_wrap(~NOME_PROVINCIA)
+
+```
+
+```{r}
+#group by absolute deaths
+
+dt_lombardia %>% 
+  group_by(ANNO,NOME_PROVINCIA) %>% 
+  summarise(MORTI = sum(MORTI)) %>% 
+  arrange(ANNO,NOME_PROVINCIA) %>% ungroup() -> dt_lombardia_prov_totals
+
+```
+
+```{r}
+#group by absolute deaths
+
+# Library
+library(fmsb)
+
+#get data
+dt_lombardia_prov_totals %>% filter(ANNO == 15) %>% select(MORTI) %>% as.vector() %>% t() -> v_15
+dt_lombardia_prov_totals %>% filter(ANNO == 16) %>% select(MORTI) %>% as.vector() %>% t() -> v_16
+dt_lombardia_prov_totals %>% filter(ANNO == 17) %>% select(MORTI) %>% as.vector() %>% t() -> v_17
+dt_lombardia_prov_totals %>% filter(ANNO == 18) %>% select(MORTI) %>% as.vector() %>% t() -> v_18
+dt_lombardia_prov_totals %>% filter(ANNO == 19) %>% select(MORTI) %>% as.vector() %>% t() -> v_19
+dt_lombardia_prov_totals %>% filter(ANNO == 20) %>% select(MORTI) %>% as.vector() %>% t() -> v_20
+
+rownames(v_15) <- c()
+rownames(v_16) <- c()
+rownames(v_17) <- c()
+rownames(v_18) <- c()
+rownames(v_19) <- c()
+rownames(v_20) <- c()
+ 
+# Create data: note in High school for several students
+set.seed(99)
+data <- as.data.frame(mx)
+colnames(data) <- unique(dt_lombardia_prov_totals$NOME_PROVINCIA)
+rownames(data) <- paste("year" , 2015:2020 , sep="-")
+ 
+# To use the fmsb package, I have to add 2 lines to the dataframe: the max and min of each variable to show on the plot!
+#mx <- rbind(
+#  v_15,v_16,v_17,v_18,v_19,v_20
+#)
+ 
+# plot with default options:
+radarchart(data,axistype=0 , maxmin=F,
+    #custom polygon
+    plwd=2 , plty=1,
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="black", cglwd=0.8, 
+    #custom labels
+    vlcex=0.8)
+```
+
+```{r}
+ggplot(data = dt_lombardia_prov_totals, aes(x = NOME_PROVINCIA, y = MORTI, fill = ANNO)) + 
+       geom_bar(stat = "identity",position=position_dodge()) + coord_flip()
+```
