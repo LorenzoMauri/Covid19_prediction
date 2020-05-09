@@ -146,7 +146,11 @@ tdpp %>% group_by(DATA, ANNO) %>%
 
 tdpp %>% ggplot(aes(x = DATA, y = DECESSI, color = ANNO)) +  geom_line() +
   facet_wrap(~NOME_PROVINCIA)
-```
+
+tdpp %>% ggplot(aes(x = NOME_PROVINCIA, y = DECESSI, fill = ANNO)) + 
+       geom_bar(stat = "identity",position=position_dodge()) + coord_flip()
+```  
+
 Gli andamenti dei decessi per le province di Bergamo, Brescia e Milano sono particolarmente significativi.
 ```{r message=FALSE, results='hide', error=FALSE}
 tdp %>% filter(NOME_REGIONE=="Lombardia")->tdpl
@@ -187,11 +191,11 @@ mortiLombardiaNonANPRsup<-(Lombardia$abitanti-Lombardia$abitantiANPR)*((mortiLom
 mortiCOVIDinf<-mortiLombardiaCampionata+mortiLombardiaNonANPRinf
 mortiCOVIDsup<-mortiLombardiaCampionata+mortiLombardiaNonCampionatasup+mortiLombardiaNonANPRsup
 ```
-Intervallo di confidenza per i morti COVID-19 in Lombardia fino a fine marzo:
+Range per i morti COVID-19 in Lombardia fino a fine marzo:
 ```{r}
 print(c(mortiCOVIDinf, mortiCOVIDsup))
 ```
-Questa forchetta di valori indica i decessi relazionati a COVID-19 in Lombardia nel periodo 1 gennaio-31 marzo 2020.
+Questa range di valori indica i decessi relazionati a COVID-19 in Lombardia nel periodo 1 gennaio-31 marzo 2020.
 Poichè abbiamo assunto come limite inferiore il caso in cui non ci siano stati morti COVID-19 nei comuni ANPR non considerati dall'Istat, possiamo supporre che il numero reale di morti sia più vicino al limite superiore. 
 Secondo il bollettino della protezione civile del 31 marzo 2020, i morti dichiarati COVID-19 in Lombardia sono 7199. La nostra stima ci porta quindi a ipotizzare che i decessi reali siano almeno il doppio rispetto ai dati della protezione civile.
 In realtà guardando il grafico dell'andamento dei decessi nelle diverse province, forse sarebbe stato più opportuno considerare una mortalità diversa provincia per provincia.
@@ -256,9 +260,9 @@ mortiLombardiaCampionata/Lombardia$abitantiCampionati*(Lombardia$abitanti-Lombar
 mortiCOVIDinf<-mortiLombardiaCampionata
 mortiCOVIDsup<-mortiLombardiaCampionata+mortiLombardiaNonCampionatasup
 ```
-Forchetta per i morti COVID-19 con dati aggiornati in Lombardia fino a fine marzo
+range per i morti COVID-19 con dati aggiornati in Lombardia fino a fine marzo
 ```{r}
 print(c(mortiCOVIDinf, mortiCOVIDsup))
 ```
 Questa stima, come ci aspettavamo, è più precisa.
-Il risultato che avevamo trovato con i dati non aggiornati contiene questa forchetta di valori e il range è decisamente spostato verso la parte superiore del precedente intervallo, in accordo con le considerazioni già illustrate. Ciò conferma che la nostra prima stima anche se meno precisa, è ragionevole.
+Il risultato che avevamo trovato con i dati non aggiornati contiene questa range di valori e il range è decisamente spostato verso la parte superiore del precedente range, in accordo con le considerazioni già illustrate. Ciò conferma che la nostra prima stima anche se meno precisa, è ragionevole.
