@@ -1,6 +1,6 @@
 ---
 title: "Previsione morti COVID-19 per la Lombardia per il periodo dal 1 gennaio al 31 marzo 2020"
-author: "Laura Cavenati, Lori, Marco Distrutti, Santosh"
+author: "Laura Cavenati, Lorenzo Mauri, Marco Distrutti"
 date: "06 maggio 2020"
 output:
   html_document:
@@ -74,13 +74,13 @@ Quando analizzeremo i morti del 2020 considereremo quindi solo i comuni con DATA
     
   
 ```{r, messagee=FALSE, results='hide', error=FALSE, warning=FALSE, warning=FALSE}
-td %>% select(-c(NOME_PROVINCIA,REG, PROV, CL_ETA,GE))%>%
+td %>% select(-c(REG, PROV, CL_ETA,GE))%>%
       filter(SESSO=="TOTALE", DECESSI<9999, format(as.Date(DATA), "%m")!="04" )%>%
-      group_by(ANNO, NOME_REGIONE, COD_PROVCOM, DATA_INIZIO_DIFF, ABITANTI, DATA)%>%
+      group_by(ANNO, NOME_REGIONE, COD_PROVCOM, NOME_PROVINCIA, DATA_INIZIO_DIFF, ABITANTI, DATA)%>%
       summarise(DECESSI=sum(DECESSI))->tdp
 ```  
   
-Per avere un'idea della bontà della copertura dei dati Istat, andiamo a vedere la percentuale di popolazione, relativa alle diverse regioni, di cui l'Istat ci ha fornito i dati e la percentuale di popolazione che rientra nei comuni considerati dall'ANPR.
+Per avere un'idea della bontà della copertura dei dati Istat, andiamo a vedere la percentuale di popolazione, relativa alle diverse regioni, di cui Istat ci ha fornito i dati e la percentuale di popolazione che rientra nei comuni considerati dall'ANPR.
 Il file che riporta i comuni subentrati in ANPR che abbiamo utilizzato è disponibile al link: https://www.anpr.interno.it/portale/tabelle-di-riferimento
 ```{r,warning=FALSE}
 ANPR %>% mutate(DATASUBENTRO=as.character(ANPR$DATASUBENTRO))%>%
@@ -132,6 +132,22 @@ Come si vede, la copertura dei dati dell’Istat è tale da non permettere stime
 Al fine di ridurre il bias preferiamo quindi concentrarci solo la Lombardia, il cui campionamento messo a disposizione dall'Istat costituisce una buona copertura del totale. Come mostra la tabella, la percentuale della popolazione considerata dall'Istat è il 72% della popolazione totale della Lombardia, mentre quella che rientra nei comuni in ANPR è 88%.
 La domanda finale a cui vogliamo rispondere è quindi: "QUANTI SONO STATI I DECESSI RELAZIONATI A COVID-19 IN LOMBARDIA NEL PERIODO DAL 1 GENNAIO AL 31 MARZO 2020?"
   
+Come prima cosa andiamo a fare un'analisi grafica delle serie storiche dei decessi (per i comuni di cui Istat ci ha fornito i dati) in Lombardia e in ogni sua  provincia.
+```{r message=FALSE, results='hide', error=FALSE}
+  tdp %>% filter(DATA_INIZIO_DIFF!="Dati 2020 n.d.",NOME_REGIONE == "Lombardia",as.Date(DATA)!=as.Date("2020-02-29"))%>% 
+        group_by(DATA, ANNO, NOME_PROVINCIA) %>%  
+        summarise(DECESSI = sum(DECESSI)) %>%           
+        arrange(ANNO, DATA) %>%                         
+        ungroup() -> tdpp    
+
+tdpp %>% group_by(DATA, ANNO) %>% 
+          summarise(DECESSI = sum(DECESSI)) %>%
+          ggplot(aes(x = DATA, y = DECESSI, color = ANNO)) +geom_line()
+
+tdpp %>% ggplot(aes(x = DATA, y = DECESSI, color = ANNO)) +  geom_line() +
+  facet_wrap(~NOME_PROVINCIA)
+```
+Gli andamenti dei decessi per le province di Bergamo, Brescia e Milano sono particolarmente significativi.
 ```{r message=FALSE, results='hide', error=FALSE}
 tdp %>% filter(NOME_REGIONE=="Lombardia")->tdpl
 TOT %>%  filter(NOME_REGIONE=="Lombardia")->Lombardia
@@ -151,7 +167,7 @@ tdpg %>% ggplot(aes(x = DATA, y = DECESSI, color = ANNO)) + geom_line()
 ```  
   
   
-Per fare una stima dei morti COVID-19, dato che non abbiamo tutti i comuni ma solo un campione non casuale, possiamo calcolare i morti relazionati COVID-19 per i comuni di cui abbiamo i dati dall'Istat. Per i comuni non considerati dall'Istat ma che rientrano nei comuni in ANPR, possiamo fare una stima, considerando come limite inferiore che non ci siano stati morti COVID-19, e come limite superiore che la mortalità per COVID-19 sia stata pari a quella dei comuni campionati. Ipotizziamo inoltre che il fatto di rientrare o meno tra i comuni in ANPR non sia correlata al numero dei decessi in eccesso; consideriamo quindi che i comuni non ANPR abbiano avuto una mortalità per COVID-19 pari a quella media dei comuni analizzati dall'Istat. Per stimare i morti in questi comuni moltiplichiamo la popoplazione non ANPR per la mortalità media registrata nel complesso nei comuni ANPR.
+Per fare una stima dei morti COVID-19, dato che non abbiamo tutti i comuni ma solo un campione non casuale, possiamo calcolare i morti relazionati COVID-19 per i comuni di cui abbiamo i dati dall'Istat. Per i comuni non considerati dall'Istat ma che rientrano nei comuni in ANPR, possiamo fare una stima, considerando come limite inferiore che non ci siano stati morti COVID-19, e come limite superiore che la mortalità per COVID-19 sia stata pari a quella dei comuni campionati. Ipotizziamo inoltre che il fatto di rientrare o meno tra i comuni in ANPR non sia correlata al numero dei decessi in eccesso; consideriamo quindi che i comuni non ANPR abbiano avuto una mortalità per COVID-19 pari a quella media dei comuni analizzati dall'Istat. Per stimare i morti in questi comuni moltiplichiamo la popoplazione non ANPR per la mortalità media registrata nel complesso nei comuni ANPR della Lombardia.
 ```{r message=FALSE, results='hide', error=FALSE}
 tdpl %>% filter(DATA_INIZIO_DIFF!="Dati 2020 n.d.")%>%
         group_by(ANNO)%>%
@@ -178,7 +194,7 @@ print(c(mortiCOVIDinf, mortiCOVIDsup))
 Questa forchetta di valori indica i decessi relazionati a COVID-19 in Lombardia nel periodo 1 gennaio-31 marzo 2020.
 Poichè abbiamo assunto come limite inferiore il caso in cui non ci siano stati morti COVID-19 nei comuni ANPR non considerati dall'Istat, possiamo supporre che il numero reale di morti sia più vicino al limite superiore. 
 Secondo il bollettino della protezione civile del 31 marzo 2020, i morti dichiarati COVID-19 in Lombardia sono 7199. La nostra stima ci porta quindi a ipotizzare che i decessi reali siano almeno il doppio rispetto ai dati della protezione civile.
-  
+In realtà guardando il grafico dell'andamento dei decessi nelle diverse province, forse sarebbe stato più opportuno considerare una mortalità diversa provincia per provincia.
   
    
 In data 4 maggio 2020 Istat ha fornito dei dati aggiornati per 6.866 comuni in riferimento al periodo 1 gennaio-31 marzo. Abbiamo perciò ripetuto la stessa analisi appena descritta pertendo dal nuovo set di dati e siamo giunti a una stima dei decessi più precisa.
