@@ -25,21 +25,20 @@ library(pander)
 # Merge daily death toll from the most updated data (comuni_giornaliero.csv) with extra data such as data_inizio_diff (comune_giorno.csv)
 #
 
-wd="C:\\Users\\loren\\Desktop\\repos_github\\Covid19_prediction\\data"
-
+#wd="C:\\Users\\loren\\Desktop\\repos_github\\Covid19_prediction\\data"
+wd <- paste(dirname(rstudioapi::getActiveDocumentContext()$path), "data", sep = .Platform$file.sep)
 setwd(wd)
 
 #readind .csv files
-file_path = c("deaths.lombardy.csv","deaths.global.csv","Tabella_45 Comuni subentrati.csv","Popolazione_comuni_italiani.csv")
-dt_lomb=read.csv(file_path[1])
-dt_global =read.csv(file_path[2])
-dt_ANPR = read.csv(file_path[3],sep=';')
-dt_population=read.csv(file_path[4],sep = ';')
+file_path     = c("deaths.lombardy.csv","deaths.global.csv","Tabella_45 Comuni subentrati.csv","Popolazione_comuni_italiani.csv")
+dt_lomb       = read_csv(file_path[1], col_types = cols( .default = "c"), locale = readr::locale(encoding = "latin1"))
+dt_global     = read_csv(file_path[2], col_types = cols( .default = "c"), locale = readr::locale(encoding = "latin1"))
+dt_ANPR       = read.csv(file_path[3],sep=';')
+dt_population = read.csv(file_path[4],sep = ',')
+
 #sorting dates (variable GE)
-dt_lomb=dt_lomb%>%arrange(GE)
-dt_global=dt_global%>%arrange(GE)
-
-
+dt_lomb   = dt_lomb   %>% arrange(GE)
+dt_global = dt_global %>% arrange(GE)
 ```
 
 

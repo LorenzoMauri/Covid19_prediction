@@ -50,7 +50,7 @@ dt_csv = dt_deaths
 #data1<-left_join(data1, comune_data_infezione, by="COD_PROVCOM")
 
 #deleting 9999 missing values
-dt_deaths = dt_deaths %>% subset(M_20 != 9999)
+dt_deaths = dt_deaths %>% subset(T_20 != 9999)
 dt_deaths %>% head(20)
 ```
 ```{r}
@@ -58,7 +58,7 @@ dt_deaths %>% head(20)
 dt_deaths = gather(data1,'M_15','M_16','M_17','M_18','M_19','M_20','F_15','F_16','F_17','F_18','F_19','F_20',key='GENERE/ANNO',value='MORTI')
 
 #elimino le righe con 0 morti e le colonne dei totali 
-dt_deaths = dt_deaths %>% subset(MORTI>0)
+#dt_deaths = dt_deaths %>% subset(MORTI>0)
 ```
 
 ```{r}
@@ -97,6 +97,6 @@ data_lomb %>% head(10)
 ```
 
 ```{r}
-dt_deaths %>% write.csv("data/deaths.lombardy.csv")
-data_lomb %>% write.csv("data/deaths.global.csv")
+data_lomb %>% write.csv("data/deaths.lombardy.csv")
+dt_deaths %>% write.csv("data/deaths.global.csv")
 ```
