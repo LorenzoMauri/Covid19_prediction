@@ -1,7 +1,9 @@
-#Covid19 mortality rate prediction
+# Covid19 mortality rate prediction
+
+## About 
 
 
-# Contributors 
+## Contributors 
 
 - Laura Cavenati 
 
